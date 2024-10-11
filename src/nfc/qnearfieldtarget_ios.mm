@@ -19,8 +19,8 @@ QT_BEGIN_NAMESPACE
 
 Q_APPLICATION_STATIC(ResponseProvider, responseProvider)
 
-void ResponseProvider::provideResponse(QNearFieldTarget::RequestId requestId, bool success, QByteArray recvBuffer) {
-    Q_EMIT responseReceived(requestId, success, recvBuffer);
+void ResponseProvider::provideResponse(QNearFieldTarget::RequestId requestId, QNearFieldTarget::Error error, QByteArray recvBuffer) {
+    Q_EMIT responseReceived(requestId, error, recvBuffer);
 }
 
 void NfcDeleter::operator()(void *obj)
@@ -275,6 +275,7 @@ bool QNearFieldTargetPrivateImpl::connect()
                 requestInProgress = QNearFieldTarget::RequestId();
                 if (errorCode == -1) {
                     connected = true;
+                    justConnected = true;
                     onExecuteRequest();
                 } else {
                     const auto requestId = queue.dequeue().first;
@@ -428,23 +429,38 @@ void QNearFieldTargetPrivateImpl::onExecuteRequest()
             QByteArray recvBuffer = QByteArray::fromNSData(responseData);
             recvBuffer += static_cast<char>(sw1);
             recvBuffer += static_cast<char>(sw2);
-            const bool success = error == nil;
-            responseProvider->provideResponse(request.first, success, recvBuffer);
+            auto errorToReport = QNearFieldTarget::NoError;
+            if (error != nil)
+            {
+                switch (error.code) {
+                    case NFCReaderError::NFCReaderTransceiveErrorSessionInvalidated:
+                    case NFCReaderError::NFCReaderTransceiveErrorTagNotConnected:
+                        if (justConnected) {
+                            errorToReport = QNearFieldTarget::UnsupportedTargetError;
+                            justConnected = false;
+                            break;
+                        }
+                        Q_FALLTHROUGH();
+                    default:
+                        errorToReport = QNearFieldTarget::CommandError;
+                }
+            }
+            responseProvider->provideResponse(request.first, errorToReport, recvBuffer);
         }];
     }
 }
 
-void  QNearFieldTargetPrivateImpl::onResponseReceived(QNearFieldTarget::RequestId requestId, bool success, QByteArray recvBuffer)
+void  QNearFieldTargetPrivateImpl::onResponseReceived(QNearFieldTarget::RequestId requestId, QNearFieldTarget::Error error, QByteArray recvBuffer)
 {
     if (requestInProgress != requestId)
         return;
 
     requestInProgress = QNearFieldTarget::RequestId();
-    if (success) {
+    if (error == QNearFieldTarget::NoError) {
         setResponseForRequest(requestId, recvBuffer, true);
         onExecuteRequest();
     } else {
-        reportError(QNearFieldTarget::CommandError, requestId);
+        reportError(error, requestId);
         invalidate();
     }
 }
