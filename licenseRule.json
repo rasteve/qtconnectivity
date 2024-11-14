@@ -88,6 +88,11 @@
                 "comment" : "Default",
                 "file type" : "build system",
                 "spdx" : ["BSD-3-Clause"]
+            },
+            "src/bluetooth/bluez/generate" : {
+                "comment" : "Default",
+                "file type" : "build system",
+                "spdx" : ["BSD-3-Clause"]
             }
         }
     }
