@@ -385,11 +385,7 @@ public slots:
                         auto readResult = SAFE(await(descriptor.ReadValueAsync(BluetoothCacheMode::Uncached), exitCondition));
                         if (!readResult)
                             WARN_AND_CONTINUE("Could not read descriptor value");
-
-                        if (descData.uuid == QBluetoothUuid::DescriptorType::CharacteristicUserDescription)
-                            descData.value = byteArrayFromGattResult(readResult, true);
-                        else
-                            descData.value = byteArrayFromGattResult(readResult);
+                        descData.value = byteArrayFromGattResult(readResult);
                     }
                 }
                 charData.descriptorList.insert(descHandle, descData);
