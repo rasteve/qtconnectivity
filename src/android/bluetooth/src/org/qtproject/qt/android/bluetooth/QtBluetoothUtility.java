@@ -6,14 +6,12 @@ package org.qtproject.qt.android.bluetooth;
 import android.Manifest;
 import android.os.Build;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.content.pm.PackageInfo;
 import android.content.res.AssetManager;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
 
 import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
 
 class QtBluetoothUtility {
 
